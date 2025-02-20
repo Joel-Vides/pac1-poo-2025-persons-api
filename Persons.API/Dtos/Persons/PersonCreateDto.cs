@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Persons.API.Dtos.Persons
 {
-    public class PersonsCreateDto
+    public class PersonCreateDto
     {
         [Display(Name = "Nombres")]
         [Required(ErrorMessage = "El Campo {0} es Requerido")]

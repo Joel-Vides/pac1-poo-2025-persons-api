@@ -40,7 +40,7 @@ namespace Persons.API.Controllers
 
 
         [HttpPost]
-        public async Task<ActionResult<ResponseDto<PersonActionResponseDto>>> Post([FromBody] PersonsCreateDto dto)
+        public async Task<ActionResult<ResponseDto<PersonActionResponseDto>>> Post([FromBody] Dtos.Persons.PersonCreateDto dto)
         {
             var response = await _personsService.CreateAsync(dto);
 

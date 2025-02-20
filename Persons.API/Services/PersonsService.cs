@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Persons.API.Constants;
 using Persons.API.Controllers;
 using Persons.API.Database;
@@ -12,29 +13,33 @@ namespace Persons.API.Services
     public class PersonsService : IPersonsService
     {
         private readonly PersonsDBContext _context;
+        private readonly IMapper _mapper;
 
-        public PersonsService(PersonsDBContext context)
+        public PersonsService(PersonsDBContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         public async Task<ResponseDto<List<PersonDto>>> GetListAsync()
         {
             var personsEntity = await _context.Persons.ToListAsync();
 
-            var personsDto = new List<PersonDto>();
+            //var personsDto = new List<PersonDto>();
 
-            foreach (var person in personsDto)
-            {
-                personsDto.Add(new PersonDto
-                {
-                    Id = person.Id,
-                    FirstName = person.FirstName,
-                    LastName = person.LastName,
-                    DNI = person.DNI,
-                    Gender = person.Gender
-                });
-            }
+            //foreach (var person in personsDto)
+            //{
+            //    personsDto.Add(new PersonDto
+            //    {
+            //        Id = person.Id,
+            //        FirstName = person.FirstName,
+            //        LastName = person.LastName,
+            //        DNI = person.DNI,
+            //        Gender = person.Gender
+            //    });
+            //}
+
+            var personsDto = _mapper.Map<List<PersonDto>>(personsEntity);
 
             return new ResponseDto<List<PersonDto>>
             {
@@ -46,7 +51,7 @@ namespace Persons.API.Services
         }
 
         public async Task<ResponseDto<PersonDto>> GetOneByIdAsync(Guid id)
-        {
+        {                                           //person => person.Id
             var personEntity = await _context.Persons.FirstOrDefaultAsync(x => x.Id == id);
 
             if (personEntity is null) 
@@ -64,45 +69,24 @@ namespace Persons.API.Services
                 StatusCode = HttpStatusCode.OK,
                 Status = true,
                 Message = "Registro Encontrado",
-                Data = new PersonDto
-                {
-                    Id = personEntity.Id,
-                    FirstName = personEntity.FirstName,
-                    LastName = personEntity.LastName,
-                    DNI = personEntity.DNI,
-                    Gender = personEntity.Gender
-                }
+                Data = _mapper.Map<PersonDto>(personEntity)
             };
         }
 
-        //Es person no persons
-        public async Task<ResponseDto<PersonActionResponseDto>> CreateAsync(PersonsCreateDto dto)
+        public async Task<ResponseDto<PersonActionResponseDto>> CreateAsync(PersonCreateDto dto)
         {
-            var personEntity = new PersonEntity
-            {
-                Id = Guid.NewGuid(),
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                DNI = dto.DNI,
-                Gender = dto.Gender
-            };
+
+            var personEntity = _mapper.Map<PersonEntity>(dto);
 
             _context.Persons.Add(personEntity);
             await _context.SaveChangesAsync();
-
-            var response = new PersonActionResponseDto
-            {
-                Id = personEntity.Id,
-                FirstName = personEntity.FirstName,
-                LastName = personEntity.LastName,
-            };
 
             return new ResponseDto<PersonActionResponseDto>
             {
                 StatusCode = HttpStatusCode.CREATED,
                 Status = true,
                 Message = "Registro Creado Correctamente",
-                Data = dto
+                Data = _mapper.Map<PersonActionResponseDto>(personEntity)
             };
         }
 
@@ -119,11 +103,13 @@ namespace Persons.API.Services
                     Message = "Registro no Encontrado",
                 };
             }
+            //Para Mapeo sin AutoMapper
+            //personEntity.FirstName = dto.FirstName;
+            //personEntity.LastName = dto.LastName;
+            //personEntity.DNI = dto.DNI;
+            //personEntity.Gender = dto.Gender;
 
-            personEntity.FirstName = dto.FirstName;
-            personEntity.LastName = dto.LastName;
-            personEntity.DNI = dto.DNI;
-            personEntity.Gender = dto.Gender;
+            _mapper.Map<PersonEditDto, PersonEntity>(dto, personEntity);
 
             _context.Persons.Update(personEntity);
             await _context.SaveChangesAsync();
@@ -133,12 +119,7 @@ namespace Persons.API.Services
                 StatusCode = HttpStatusCode.OK,
                 Status = true,
                 Message = "Registro Editado Correctamente",
-                Data = new PersonActionResponseDto
-                {
-                    Id = personEntity.Id,
-                    FirstName = dto.FirstName,
-                    LastName = dto.LastName,
-                }
+                Data = _mapper.Map<PersonActionResponseDto>(personEntity)
             };
         }
 
@@ -164,23 +145,10 @@ namespace Persons.API.Services
                 StatusCode = HttpStatusCode.OK,
                 Status = true,
                 Message = "Registro Eliminado Correctamente",
-                Data = new PersonActionResponseDto
-                {
-                    Id = personEntity.Id,
-                    FirstName = personEntity.FirstName,
-                    LastName = personEntity.LastName,
-                }
+                Data = _mapper.Map<PersonActionResponseDto>(personEntity)
             };
 
         }
-
-        //Esto
-        public Task CreateAsync(PersonCreateDto dto)
-        {
-            throw new NotImplementedException();
-        }
-
-
 
     }
 }

@@ -2,8 +2,7 @@
 
 namespace Persons.API.Dtos.Persons
 {
-    //Person no Persons
-    public class PersonEditDto : PersonsCreateDto
+    public class PersonEditDto : PersonCreateDto
     {
     }
 }

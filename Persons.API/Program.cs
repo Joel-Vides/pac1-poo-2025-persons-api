@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Persons.API.Database;
+using Persons.API.Helpers;
 using Persons.API.Services;
 using Persons.API.Services.Interfaces;
 using Scalar.AspNetCore;
@@ -10,6 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<PersonsDBContext>(options => 
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

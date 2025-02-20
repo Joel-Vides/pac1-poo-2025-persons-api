@@ -6,9 +6,5 @@
         public string FirstName { get; set; }
         public string LastName { get; set; }
 
-        public static implicit operator PersonActionResponseDto(PersonsCreateDto v)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
