@@ -1,15 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Persons.API.Database.Entities.Common;
 
 namespace Persons.API.Database.Entities
 {
     [Table("Persons")]
-    public class PersonEntity
+    public class PersonEntity : BaseEntity
     {
-        [Key]
-        [Column("id")]
-        public Guid Id { get; set; }
-
         [Column("first_name")]
         [Required]
         public string FirstName { get; set; }
@@ -25,17 +22,13 @@ namespace Persons.API.Database.Entities
         [Column("gender")]
         public string Gender { get; set; }
 
-        [Column("created_by")]
-        public string CreatedBy { get; set; }
+        [Column("country_id")]
+        public Guid? CountryId { get; set; }
 
-        [Column("created_date")]
-        public DateTime CreatedDate { get; set; }
+        //Crear la Relación Entre Ambas Tablas, Country y Person
+        [ForeignKey(nameof(CountryId))]
+        public virtual CountryEntity Country { get; set; }
 
-        [Column("updated_by")]
-        public string UpdatedBy { get; set; }
-
-        [Column("updated_date")]
-        public DateTime UpdatedDate { get; set; }
     }
 
 }

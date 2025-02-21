@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Persons.API.Database;
 
@@ -10,9 +11,11 @@ using Persons.API.Database;
 namespace Persons.API.Migrations
 {
     [DbContext(typeof(PersonsDBContext))]
-    partial class PersonsDBContextModelSnapshot : ModelSnapshot
+    [Migration("20250221021548_AddTableCountries")]
+    partial class AddTableCountries
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.2");
@@ -62,10 +65,6 @@ namespace Persons.API.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("id");
 
-                    b.Property<Guid?>("CountryId")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("country_id");
-
                     b.Property<string>("CreatedBy")
                         .HasColumnType("TEXT")
                         .HasColumnName("created_by");
@@ -103,23 +102,7 @@ namespace Persons.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CountryId");
-
                     b.ToTable("Persons");
-                });
-
-            modelBuilder.Entity("Persons.API.Database.Entities.PersonEntity", b =>
-                {
-                    b.HasOne("Persons.API.Database.Entities.CountryEntity", "Country")
-                        .WithMany("Persons")
-                        .HasForeignKey("CountryId");
-
-                    b.Navigation("Country");
-                });
-
-            modelBuilder.Entity("Persons.API.Database.Entities.CountryEntity", b =>
-                {
-                    b.Navigation("Persons");
                 });
 #pragma warning restore 612, 618
         }
