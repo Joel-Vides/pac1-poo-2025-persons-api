@@ -19,6 +19,8 @@ builder.Services.AddControllers();
 
 builder.Services.AddTransient<IPersonsService, PersonsService>();
 
+builder.Services.AddTransient<ICountriesService, CountriesService>();
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

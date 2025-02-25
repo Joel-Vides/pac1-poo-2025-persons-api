@@ -12,8 +12,8 @@ namespace Persons.API.Database.Entities
         public string Name { get; set; }
         [Column("alpha_code_3")]
         [Required]
-        public string AlfaCode3 { get; set; }
+        public string AlphaCode3 { get; set; }
 
-        public virtual IEnumerable<PersonEntity> Persons { get; set; }
+        //public virtual IEnumerable<PersonEntity> Countries { get; set; }
     }
 }

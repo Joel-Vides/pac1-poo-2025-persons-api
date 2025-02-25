@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
-namespace Persons.API.Dtos.Persons
+namespace Persons.API.Dtos.Countries
 {
     public class PersonCreateDto
     {

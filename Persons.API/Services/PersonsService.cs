@@ -5,7 +5,7 @@ using Persons.API.Controllers;
 using Persons.API.Database;
 using Persons.API.Database.Entities;
 using Persons.API.Dtos.Common;
-using Persons.API.Dtos.Persons;
+using Persons.API.Dtos.Countries;
 using Persons.API.Services.Interfaces;
 
 namespace Persons.API.Services

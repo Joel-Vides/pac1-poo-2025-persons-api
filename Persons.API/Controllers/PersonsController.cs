@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Persons.API.Database.Entities;
 using Persons.API.Dtos.Common;
-using Persons.API.Dtos.Persons;
+using Persons.API.Dtos.Countries;
 using Persons.API.Services.Interfaces;
 
 namespace Persons.API.Controllers
@@ -40,7 +40,7 @@ namespace Persons.API.Controllers
 
 
         [HttpPost]
-        public async Task<ActionResult<ResponseDto<PersonActionResponseDto>>> Post([FromBody] Dtos.Persons.PersonCreateDto dto)
+        public async Task<ActionResult<ResponseDto<PersonActionResponseDto>>> Post([FromBody] PersonCreateDto dto)
         {
             var response = await _personsService.CreateAsync(dto);
 

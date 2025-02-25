@@ -1,7 +1,7 @@
 ﻿using Persons.API.Controllers;
 using Persons.API.Database.Entities;
 using Persons.API.Dtos.Common;
-using Persons.API.Dtos.Persons;
+using Persons.API.Dtos.Countries;
 
 namespace Persons.API.Services.Interfaces
 {
