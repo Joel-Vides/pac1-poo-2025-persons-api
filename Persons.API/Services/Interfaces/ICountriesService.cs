@@ -9,7 +9,7 @@ namespace Persons.API.Services.Interfaces
         Task<ResponseDto<CountryActionResponseDto>> CreateAsync(CountriesCreateDto dto);
         Task<ResponseDto<CountryActionResponseDto>> DeleteAsync(Guid id);
         Task<ResponseDto<CountryActionResponseDto>> EditAsync(CountryEditDto dto, Guid id);
-        Task<ResponseDto<List<CountryDto>>> GetListAsync();
+        Task<ResponseDto<PaginationDto<List<CountryDto>>>> GetListAsync(string searchTerm = "", int page = 1, int pageSize = 0);
         Task<ResponseDto<CountryDto>> GetOneByIdAsync(Guid id);
     }
 }

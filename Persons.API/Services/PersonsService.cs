@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Linq.Expressions;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Persons.API.Constants;
 using Persons.API.Controllers;
@@ -14,39 +15,62 @@ namespace Persons.API.Services
     {
         private readonly PersonsDBContext _context;
         private readonly IMapper _mapper;
+        private readonly int PAGE_SIZE;
+        private readonly int PAGE_SIZE_LIMIT;
 
-        public PersonsService(PersonsDBContext context, IMapper mapper)
+        public PersonsService(PersonsDBContext context, IMapper mapper, IConfiguration configuration)
         {
             _context = context;
             _mapper = mapper;
+            PAGE_SIZE = configuration.GetValue<int>("PageSize");
+            PAGE_SIZE_LIMIT = configuration.GetValue<int>("PageSizeLimit");
         }
 
-        public async Task<ResponseDto<List<PersonDto>>> GetListAsync()
+        public async Task<ResponseDto<PaginationDto<List<PersonDto>>>> GetListAsync(
+            string searchTerm = "", int page = 1, int pageSize = 0
+            )
         {
-            var personsEntity = await _context.Persons.ToListAsync();
+            //03/03/25 ->
+            pageSize = pageSize == 0 ? PAGE_SIZE : pageSize;
 
-            //var personsDto = new List<PersonDto>();
+            int startIndex = (page - 1) * pageSize;
 
-            //foreach (var person in personsDto)
-            //{
-            //    personsDto.Add(new PersonDto
-            //    {
-            //        Id = person.Id,
-            //        FirstName = person.FirstName,
-            //        LastName = person.LastName,
-            //        DNI = person.DNI,
-            //        Gender = person.Gender
-            //    });
-            //}
+            IQueryable<PersonEntity> personQuery = _context.Persons;
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                personQuery = personQuery.Where(x => (x.DNI + " " + x.FirstName + " " + x.LastName).Contains(searchTerm));
+            }
+
+            int totalRows = await personQuery.CountAsync();
+
+            var personsEntity = await personQuery.OrderBy(x => x.FirstName)
+                .Skip(startIndex)
+                .Take(pageSize)
+                .ToListAsync();
+            // <-
+
+
+            //Lo que Teniamos Antes de lo de Arriba
+            //var personsEntity = await _context.Persons.ToListAsync();
 
             var personsDto = _mapper.Map<List<PersonDto>>(personsEntity);
 
-            return new ResponseDto<List<PersonDto>>
+            return new ResponseDto<PaginationDto<List<PersonDto>>>
             {
                 StatusCode = HttpStatusCode.OK,
                 Status = true,
                 Message = personsEntity.Count() > 0 ? "Registros Encontrados" : "No se Encontraron Registros", //Operador Ternario
-                Data = personsDto
+                Data = new PaginationDto<List<PersonDto>>{
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalItems = totalRows,
+                    TotalPages = (int)Math.Ceiling((double)totalRows / pageSize),
+                    Items = personsDto,
+                    HasPreviousPage = page > 1,
+                    HasNextPage = startIndex + pageSize < PAGE_SIZE_LIMIT && page < (int)Math
+                    .Ceiling((double)(totalRows / pageSize)),
+                }
             };
         }
 
@@ -78,6 +102,18 @@ namespace Persons.API.Services
 
             var personEntity = _mapper.Map<PersonEntity>(dto);
 
+            var countryEntity = await _context.Countries.FirstOrDefaultAsync(c => c.Id == dto.CountryId);
+
+            if (countryEntity is null)
+            {
+                return new ResponseDto<PersonActionResponseDto>
+                {
+                    StatusCode = HttpStatusCode.BAD_REQUEST,
+                    Status = false,
+                    Message = "El Pais no Existe!"
+                };
+            }
+
             _context.Persons.Add(personEntity);
             await _context.SaveChangesAsync();
 
@@ -103,6 +139,20 @@ namespace Persons.API.Services
                     Message = "Registro no Encontrado",
                 };
             }
+
+            //Validar si Existe el Pais en la Base de Datos de Paises
+            var countryEntity = await _context.Countries.FirstOrDefaultAsync(c => c.Id == dto.CountryId);
+
+            if (countryEntity is null)
+            {
+                return new ResponseDto<PersonActionResponseDto>
+                {
+                    StatusCode = HttpStatusCode.BAD_REQUEST,
+                    Status = false,
+                    Message = "El Pais no Existe!"
+                };
+            }
+
             //Para Mapeo sin AutoMapper
             //personEntity.FirstName = dto.FirstName;
             //personEntity.LastName = dto.LastName;
@@ -150,5 +200,6 @@ namespace Persons.API.Services
 
         }
 
+    
     }
 }

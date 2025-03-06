@@ -19,9 +19,11 @@ namespace Persons.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<ResponseDto<List<CountriesCreateDto>>>> GetList()//este
+        public async Task<ActionResult<ResponseDto<List<CountriesCreateDto>>>> GetList(
+            string searchTerm = "", int page = 1, int pageSize = 0
+            )
         {
-            var response = await _countriesService.GetListAsync();
+            var response = await _countriesService.GetListAsync(searchTerm, page, pageSize);
 
             return StatusCode(response.StatusCode, new
             {
@@ -50,7 +52,7 @@ namespace Persons.API.Controllers
                 response.Message,
                 response.Data,
             });
-        }//Este
+        }
 
         [HttpPut("{id}")]
         public async Task<ActionResult<ResponseDto<CountryActionResponseDto>>> Edit([FromBody] CountryEditDto dto, Guid Id)

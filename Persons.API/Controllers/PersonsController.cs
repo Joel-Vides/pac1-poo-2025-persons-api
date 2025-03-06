@@ -18,9 +18,11 @@ namespace Persons.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<ResponseDto<List<PersonCreateDto>>>> GetList()//este
+        public async Task<ActionResult<ResponseDto<List<PersonCreateDto>>>> GetList(
+            string searchTerm = "", int page = 1, int pageSize = 0
+            )
         {
-            var response = await _personsService.GetListAsync();
+            var response = await _personsService.GetListAsync(searchTerm, page, pageSize);
 
             return StatusCode(response.StatusCode, new
             {

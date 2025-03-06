@@ -10,7 +10,7 @@ namespace Persons.API.Services.Interfaces
         Task<ResponseDto<PersonActionResponseDto>> CreateAsync(PersonCreateDto dto);
         Task<ResponseDto<PersonActionResponseDto>> DeleteAsync(Guid id);
         Task<ResponseDto<PersonActionResponseDto>> EditAsync(PersonEditDto dto, Guid id);
-        Task<ResponseDto<List<PersonDto>>> GetListAsync();
+        Task<ResponseDto<PaginationDto<List<PersonDto>>>> GetListAsync(string searchTerm = "", int page = 1, int pageSize = 0);
         Task<ResponseDto<PersonDto>> GetOneByIdAsync(Guid id);
     }
 }

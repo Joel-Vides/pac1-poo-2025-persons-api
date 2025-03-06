@@ -5,8 +5,10 @@ using Persons.API.Constants;
 using Persons.API.Dtos.Common;
 using Persons.API.Dtos.Countries;
 using Persons.API.Services.Interfaces;
-using Persons.API.Dtos.Coutries;
 using Persons.API.Database.Entities;
+using Persons.API.Dtos.Coutries;
+using Microsoft.Extensions.Configuration;
+
 
 namespace Persons.API.Services
 {
@@ -14,30 +16,61 @@ namespace Persons.API.Services
     {
         private readonly PersonsDBContext _context;
         private readonly IMapper _mapper;
+        private readonly int PAGE_SIZE;
+        private readonly int PAGE_SIZE_LIMIT;
 
-        public CountriesService(PersonsDBContext context, IMapper mapper)
+        public CountriesService(PersonsDBContext context, IMapper mapper, IConfiguration configuration)
         {
             _context = context;
             _mapper = mapper;
+            PAGE_SIZE = configuration.GetValue<int>("PageSize");
+            PAGE_SIZE_LIMIT = configuration.GetValue<int>("PageSizeLimit");
         }
 
-        public async Task<ResponseDto<List<CountryDto>>> GetListAsync()
+        public async Task<ResponseDto<PaginationDto<List<CountryDto>>>> GetListAsync(
+            string searchTerm = "", int page = 1, int pageSize = 0
+            )
         {
-            var countriesEntities = await _context.Countries.ToListAsync();
+            pageSize = pageSize == 0 ? PAGE_SIZE : pageSize;
+
+            int startIndex = (page - 1) * pageSize;
+
+            IQueryable<CountryEntity> countryQuery = _context.Countries;
+
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                countryQuery = countryQuery.Where(x => (x.Name + " " + x.AlphaCode3).Contains(searchTerm));
+            }
+
+            int totalRows = await countryQuery.CountAsync();
+
+            var countriesEntities = await countryQuery.OrderBy(x => x.Name)
+                .Skip(startIndex)
+                .Take(pageSize)
+                .ToListAsync();
 
             var countriesDto = _mapper.Map<List<CountryDto>>(countriesEntities);
 
-            return new ResponseDto<List<CountryDto>>
+            return new ResponseDto<PaginationDto<List<CountryDto>>>
             {
                 StatusCode = HttpStatusCode.OK,
                 Status = true,
                 Message = countriesEntities.Count() > 0 ? "Registros Encontrados" : "No se Encontraron Registros", //Operador Ternario
-                Data = countriesDto
+                Data = new PaginationDto<List<CountryDto>>
+                {
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalItems = totalRows,
+                    TotalPages = (int)Math.Ceiling((double)totalRows / pageSize),
+                    Items = countriesDto,
+                    HasPreviousPage = page > 1,
+                    HasNextPage = startIndex + pageSize < PAGE_SIZE_LIMIT && page < (int)Math
+                    .Ceiling((double)(totalRows / pageSize)),
+                }
             };
         }
-
         public async Task<ResponseDto<CountryDto>> GetOneByIdAsync(Guid id)
-        {                                           //person => person.Id
+        {
             var countryEntity = await _context.Countries.FirstOrDefaultAsync(x => x.Id == id);
 
             if (countryEntity is null)
@@ -50,6 +83,7 @@ namespace Persons.API.Services
                 };
 
             }
+
             return new ResponseDto<CountryDto>
             {
                 StatusCode = HttpStatusCode.OK,
@@ -115,6 +149,18 @@ namespace Persons.API.Services
                     StatusCode = HttpStatusCode.NOT_FOUND,
                     Status = false,
                     Message = "Registro no Encontrado"
+                };
+            }
+
+            var personInCountry = await _context.Persons.CountAsync(p => p.CountryId == id);
+
+            if (personInCountry > 0) 
+            {
+                return new ResponseDto<CountryActionResponseDto>
+                {
+                    StatusCode = HttpStatusCode.BAD_REQUEST,
+                    Status = false,
+                    Message = "El Pais Tiene Datos Relacionados!"
                 };
             }
 
