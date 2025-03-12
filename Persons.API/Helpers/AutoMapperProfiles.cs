@@ -2,6 +2,7 @@
 using Persons.API.Database.Entities;
 using Persons.API.Dtos.Countries;
 using Persons.API.Dtos.Coutries;
+using Persons.API.Dtos.Persons;
 
 namespace Persons.API.Helpers
 {
@@ -19,6 +20,7 @@ namespace Persons.API.Helpers
             CreateMap<CountriesCreateDto, CountryEntity>();
             CreateMap<CountryEditDto, CountryEntity>();
 
+            CreateMap<FamilyMemberCreateDto, FamilyMemberEntity>();
         }
     }
 }

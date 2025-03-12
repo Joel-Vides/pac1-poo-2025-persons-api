@@ -29,6 +29,9 @@ namespace Persons.API.Database.Entities
         [ForeignKey(nameof(CountryId))]
         public virtual CountryEntity Country { get; set; }
 
+
+        public virtual IEnumerable<FamilyMemberEntity> FamilyGroup { get; set; }
+
     }
 
 }

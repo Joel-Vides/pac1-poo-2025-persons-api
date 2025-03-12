@@ -12,6 +12,8 @@ namespace Persons.API.Database
 
         public DbSet<PersonEntity> Persons { get; set; }
         public DbSet<CountryEntity> Countries { get; set; }
+
+        public DbSet<FamilyMemberEntity> FamilyGroup { get; set; }
     }
 
 }

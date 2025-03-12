@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using AutoMapper;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Persons.API.Constants;
 using Persons.API.Controllers;
@@ -99,31 +100,75 @@ namespace Persons.API.Services
 
         public async Task<ResponseDto<PersonActionResponseDto>> CreateAsync(PersonCreateDto dto)
         {
-
-            var personEntity = _mapper.Map<PersonEntity>(dto);
-
-            var countryEntity = await _context.Countries.FirstOrDefaultAsync(c => c.Id == dto.CountryId);
-
-            if (countryEntity is null)
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                return new ResponseDto<PersonActionResponseDto>
+                try
                 {
-                    StatusCode = HttpStatusCode.BAD_REQUEST,
-                    Status = false,
-                    Message = "El Pais no Existe!"
-                };
+                    var personEntity = _mapper.Map<PersonEntity>(dto);
+
+                    var countryEntity = await _context.Countries.FirstOrDefaultAsync(c => c.Id == dto.CountryId);
+
+                    if (countryEntity is null)
+                    {
+                        return new ResponseDto<PersonActionResponseDto>
+                        {
+                            StatusCode = HttpStatusCode.BAD_REQUEST,
+                            Status = false,
+                            Message = "El Pais no Existe!"
+                        };
+                    }
+
+                    _context.Persons.Add(personEntity);
+
+                    await _context.SaveChangesAsync();
+                    //Mapeo para Family Members
+                    if (dto.Family != null && dto.Family.Count() > 1)
+                    {
+                        var familyGroup = _mapper.Map<List<FamilyMemberEntity>>(dto.Family);
+
+                        familyGroup = familyGroup.Select(m => new FamilyMemberEntity
+                        {
+                            Id = Guid.NewGuid(),
+                            FirstName = m.FirstName,
+                            LastName = m.LastName,
+                            PersonId = personEntity.Id,
+                            Relationship = m.Relationship
+                        }).ToList();
+
+                        _context.FamilyGroup.AddRange(familyGroup);
+
+                        await _context.SaveChangesAsync();
+                    }
+
+
+                    transaction.Commit();
+
+                    return new ResponseDto<PersonActionResponseDto>
+                    {
+                        StatusCode = HttpStatusCode.CREATED,
+                        Status = true,
+                        Message = "Registro Creado Correctamente",
+                        Data = _mapper.Map<PersonActionResponseDto>(personEntity)
+                    };
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+
+                    // Deshacer todo si se produce un error
+                    await transaction.RollbackAsync();
+
+                    return new ResponseDto<PersonActionResponseDto>
+                    {
+                        StatusCode = HttpStatusCode.INTERNAL_SERVER_ERROR,
+                        Status = false,
+                        Message = "Error Interno en el Servidor, Contacte al Admin",
+                    };
+                }
+                
             }
 
-            _context.Persons.Add(personEntity);
-            await _context.SaveChangesAsync();
-
-            return new ResponseDto<PersonActionResponseDto>
-            {
-                StatusCode = HttpStatusCode.CREATED,
-                Status = true,
-                Message = "Registro Creado Correctamente",
-                Data = _mapper.Map<PersonActionResponseDto>(personEntity)
-            };
+            
         }
 
         public async Task<ResponseDto<PersonActionResponseDto>> EditAsync(PersonEditDto dto, Guid id)
