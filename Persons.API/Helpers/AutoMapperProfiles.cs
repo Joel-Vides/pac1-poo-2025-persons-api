@@ -19,8 +19,9 @@ namespace Persons.API.Helpers
             CreateMap<CountryEntity, CountryActionResponseDto>();
             CreateMap<CountriesCreateDto, CountryEntity>();
             CreateMap<CountryEditDto, CountryEntity>();
-
-            CreateMap<FamilyMemberCreateDto, FamilyMemberEntity>();
+            
+            //Pasarse Info el Uno a el Otro
+            CreateMap<FamilyMemberCreateDto, FamilyMemberEntity>().ReverseMap();
         }
     }
 }

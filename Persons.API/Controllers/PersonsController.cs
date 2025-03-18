@@ -37,7 +37,7 @@ namespace Persons.API.Controllers
         {
             var response = await _personsService.GetOneByIdAsync(id);
 
-            return StatusCode(Response.StatusCode, response);
+            return StatusCode(response.StatusCode, response);
         }
 
 

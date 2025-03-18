@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using System.Security.Cryptography.X509Certificates;
 using AutoMapper;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -77,7 +78,7 @@ namespace Persons.API.Services
 
         public async Task<ResponseDto<PersonDto>> GetOneByIdAsync(Guid id)
         {                                           //person => person.Id
-            var personEntity = await _context.Persons.FirstOrDefaultAsync(x => x.Id == id);
+            var personEntity = await _context.Persons.Include(x => x.FamilyGroup).FirstOrDefaultAsync(x => x.Id == id);
 
             if (personEntity is null) 
             {
@@ -164,58 +165,101 @@ namespace Persons.API.Services
                         Status = false,
                         Message = "Error Interno en el Servidor, Contacte al Admin",
                     };
-                }
-                
+                }   
             }
-
-            
         }
 
         public async Task<ResponseDto<PersonActionResponseDto>> EditAsync(PersonEditDto dto, Guid id)
         {
-            var personEntity = await _context.Persons.FirstOrDefaultAsync(x => x.Id == id);
-
-            if (personEntity is null)
+            using (var transaction = await _context.Database.BeginTransactionAsync())
             {
-                return new ResponseDto<PersonActionResponseDto>
+                try
                 {
-                    StatusCode = HttpStatusCode.NOT_FOUND,
-                    Status = false,
-                    Message = "Registro no Encontrado",
-                };
+                    var personEntity = await _context.Persons.FirstOrDefaultAsync(x => x.Id == id);
+
+                    if (personEntity is null)
+                    {
+                        return new ResponseDto<PersonActionResponseDto>
+                        {
+                            StatusCode = HttpStatusCode.NOT_FOUND,
+                            Status = false,
+                            Message = "Registro no Encontrado",
+                        };
+                    }
+
+                    //Validar si Existe el Pais en la Base de Datos de Paises
+                    var countryEntity = await _context.Countries.FirstOrDefaultAsync(c => c.Id == dto.CountryId);
+
+                    if (countryEntity is null)
+                    {
+                        return new ResponseDto<PersonActionResponseDto>
+                        {
+                            StatusCode = HttpStatusCode.BAD_REQUEST,
+                            Status = false,
+                            Message = "El Pais no Existe!"
+                        };
+                    }
+
+                    //Para Mapeo sin AutoMapper
+                    //personEntity.FirstName = dto.FirstName;
+                    //personEntity.LastName = dto.LastName;
+                    //personEntity.DNI = dto.DNI;
+                    //personEntity.Gender = dto.Gender;
+
+                    _mapper.Map<PersonEditDto, PersonEntity>(dto, personEntity);
+
+                    _context.Persons.Update(personEntity);
+                    await _context.SaveChangesAsync();
+
+                    if (dto.Family is not null && dto.Family.Count > 0)
+                    {
+                        var oldFamilyGroup = await _context.FamilyGroup.Where(fg => fg.PersonId == id).ToListAsync();
+
+                        if (oldFamilyGroup.Count > 0)
+                        {
+                            _context.RemoveRange(oldFamilyGroup);
+                            await _context.SaveChangesAsync();
+                        }
+
+                        var newFamilyGroup = dto.Family
+                            .Select(fg => new FamilyMemberEntity
+                            {
+                                Id = Guid.NewGuid(),
+                                FirstName = fg.FirstName,
+                                LastName = fg.LastName,
+                                PersonId = id,
+                                Relationship = fg.Relationship
+                            }).ToList();
+
+                        _context.AddRange(newFamilyGroup);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    await transaction.CommitAsync();
+
+                    return new ResponseDto<PersonActionResponseDto>
+                    {
+                        StatusCode = HttpStatusCode.OK,
+                        Status = true,
+                        Message = "Registro Editado Correctamente",
+                        Data = _mapper.Map<PersonActionResponseDto>(personEntity)
+                    };
+                }
+
+                catch  (Exception)
+                {
+                    await transaction.RollbackAsync();
+
+                    return new ResponseDto<PersonActionResponseDto>
+                    {
+                        StatusCode = HttpStatusCode.INTERNAL_SERVER_ERROR,
+                        Status = false,
+                        Message = "Se Produjo un Error al Editar el Registro"
+                    };
+                }
             }
 
-            //Validar si Existe el Pais en la Base de Datos de Paises
-            var countryEntity = await _context.Countries.FirstOrDefaultAsync(c => c.Id == dto.CountryId);
-
-            if (countryEntity is null)
-            {
-                return new ResponseDto<PersonActionResponseDto>
-                {
-                    StatusCode = HttpStatusCode.BAD_REQUEST,
-                    Status = false,
-                    Message = "El Pais no Existe!"
-                };
-            }
-
-            //Para Mapeo sin AutoMapper
-            //personEntity.FirstName = dto.FirstName;
-            //personEntity.LastName = dto.LastName;
-            //personEntity.DNI = dto.DNI;
-            //personEntity.Gender = dto.Gender;
-
-            _mapper.Map<PersonEditDto, PersonEntity>(dto, personEntity);
-
-            _context.Persons.Update(personEntity);
-            await _context.SaveChangesAsync();
-
-            return new ResponseDto<PersonActionResponseDto>
-            {
-                StatusCode = HttpStatusCode.OK,
-                Status = true,
-                Message = "Registro Editado Correctamente",
-                Data = _mapper.Map<PersonActionResponseDto>(personEntity)
-            };
+            
         }
 
         public async Task<ResponseDto<PersonActionResponseDto>> DeleteAsync(Guid id)
