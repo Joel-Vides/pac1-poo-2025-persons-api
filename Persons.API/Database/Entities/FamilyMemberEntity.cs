@@ -9,7 +9,7 @@ namespace Persons.API.Database.Entities
     {
         [Column("id")]
         [Key]
-        public Guid Id { get; set; }
+        public string Id { get; set; }
 
         [Column("first_name")]
         [Required]
@@ -24,7 +24,7 @@ namespace Persons.API.Database.Entities
         public string Relationship { get; set; }
 
         [Column("person_id")]
-        public Guid PersonId { get; set; }
+        public string PersonId { get; set; }
 
         [ForeignKey(nameof(PersonId))]
         public virtual PersonEntity Person { get; set; }

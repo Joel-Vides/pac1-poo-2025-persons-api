@@ -23,7 +23,7 @@ namespace Persons.API.Database.Entities
         public string Gender { get; set; }
 
         [Column("country_id")]
-        public Guid? CountryId { get; set; }
+        public string CountryId { get; set; }
 
         //Crear la Relación Entre Ambas Tablas, Country y Person
         [ForeignKey(nameof(CountryId))]

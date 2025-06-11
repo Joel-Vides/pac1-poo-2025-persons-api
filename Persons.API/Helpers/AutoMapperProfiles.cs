@@ -3,6 +3,7 @@ using Persons.API.Database.Entities;
 using Persons.API.Dtos.Countries;
 using Persons.API.Dtos.Coutries;
 using Persons.API.Dtos.Persons;
+using Persons.API.Dtos.Security.Roles;
 
 namespace Persons.API.Helpers
 {
@@ -22,6 +23,11 @@ namespace Persons.API.Helpers
             
             //Pasarse Info el Uno a el Otro
             CreateMap<FamilyMemberCreateDto, FamilyMemberEntity>().ReverseMap();
+
+            CreateMap<RoleEntity, RoleDto>();
+            CreateMap<RoleEntity, RoleActionResponseDto>();
+            CreateMap<RoleCreateDto, RoleEntity>();
+            CreateMap<RoleEditDto, RoleEntity>();
         }
     }
 }

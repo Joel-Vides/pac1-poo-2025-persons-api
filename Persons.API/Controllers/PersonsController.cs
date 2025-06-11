@@ -33,7 +33,7 @@ namespace Persons.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<ResponseDto<PersonDto>>> GetOne(Guid id)
+        public async Task<ActionResult<ResponseDto<PersonDto>>> GetOne(string id)
         {
             var response = await _personsService.GetOneByIdAsync(id);
 
@@ -56,7 +56,7 @@ namespace Persons.API.Controllers
 
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<ResponseDto<PersonActionResponseDto>>> Edit([FromBody]PersonEditDto dto, Guid Id)
+        public async Task<ActionResult<ResponseDto<PersonActionResponseDto>>> Edit([FromBody]PersonEditDto dto, string Id)
         {
             var response = await _personsService.EditAsync(dto, Id);
 
@@ -64,7 +64,7 @@ namespace Persons.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<ActionResult<ResponseDto<PersonActionResponseDto>>> Delete(Guid id)
+        public async Task<ActionResult<ResponseDto<PersonActionResponseDto>>> Delete(string id)
         {
             var response = await _personsService.DeleteAsync(id);
 

@@ -7,7 +7,7 @@ namespace Persons.API.Database.Entities.Common
     {
         [Key]
         [Column("id")]
-        public Guid Id { get; set; }
+        public string Id { get; set; }
 
         [Column("created_by")]
         public string CreatedBy { get; set; }

@@ -7,9 +7,9 @@ namespace Persons.API.Services.Interfaces
     public interface ICountriesService
     {
         Task<ResponseDto<CountryActionResponseDto>> CreateAsync(CountriesCreateDto dto);
-        Task<ResponseDto<CountryActionResponseDto>> DeleteAsync(Guid id);
-        Task<ResponseDto<CountryActionResponseDto>> EditAsync(CountryEditDto dto, Guid id);
+        Task<ResponseDto<CountryActionResponseDto>> DeleteAsync(string id);
+        Task<ResponseDto<CountryActionResponseDto>> EditAsync(CountryEditDto dto, string id);
         Task<ResponseDto<PaginationDto<List<CountryDto>>>> GetListAsync(string searchTerm = "", int page = 1, int pageSize = 0);
-        Task<ResponseDto<CountryDto>> GetOneByIdAsync(Guid id);
+        Task<ResponseDto<CountryDto>> GetOneByIdAsync(string id);
     }
 }

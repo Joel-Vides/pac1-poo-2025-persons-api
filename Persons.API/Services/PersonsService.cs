@@ -20,7 +20,10 @@ namespace Persons.API.Services
         private readonly int PAGE_SIZE;
         private readonly int PAGE_SIZE_LIMIT;
 
-        public PersonsService(PersonsDBContext context, IMapper mapper, IConfiguration configuration)
+        public PersonsService(
+            PersonsDBContext context,
+            IMapper mapper,
+            IConfiguration configuration)
         {
             _context = context;
             _mapper = mapper;
@@ -30,9 +33,8 @@ namespace Persons.API.Services
 
         public async Task<ResponseDto<PaginationDto<List<PersonDto>>>> GetListAsync(
             string searchTerm = "", int page = 1, int pageSize = 0
-            )
+        )
         {
-            //03/03/25 ->
             pageSize = pageSize == 0 ? PAGE_SIZE : pageSize;
 
             int startIndex = (page - 1) * pageSize;
@@ -41,20 +43,18 @@ namespace Persons.API.Services
 
             if (!string.IsNullOrEmpty(searchTerm))
             {
-                personQuery = personQuery.Where(x => (x.DNI + " " + x.FirstName + " " + x.LastName).Contains(searchTerm));
+                personQuery = personQuery
+                    .Where(x => (x.DNI + " " + x.FirstName + " " + x.LastName)
+                    .Contains(searchTerm));
             }
 
             int totalRows = await personQuery.CountAsync();
 
-            var personsEntity = await personQuery.OrderBy(x => x.FirstName)
+            var personsEntity = await personQuery
+                .OrderBy(x => x.FirstName)
                 .Skip(startIndex)
                 .Take(pageSize)
                 .ToListAsync();
-            // <-
-
-
-            //Lo que Teniamos Antes de lo de Arriba
-            //var personsEntity = await _context.Persons.ToListAsync();
 
             var personsDto = _mapper.Map<List<PersonDto>>(personsEntity);
 
@@ -62,41 +62,50 @@ namespace Persons.API.Services
             {
                 StatusCode = HttpStatusCode.OK,
                 Status = true,
-                Message = personsEntity.Count() > 0 ? "Registros Encontrados" : "No se Encontraron Registros", //Operador Ternario
-                Data = new PaginationDto<List<PersonDto>>{
+                Message = personsEntity.Count() > 0
+                    ? "Registros encontrados"
+                    : "No se encontraron registros",
+                Data = new PaginationDto<List<PersonDto>>
+                {
                     CurrentPage = page,
                     PageSize = pageSize,
                     TotalItems = totalRows,
                     TotalPages = (int)Math.Ceiling((double)totalRows / pageSize),
                     Items = personsDto,
-                    HasPreviousPage = page > 1,
                     HasNextPage = startIndex + pageSize < PAGE_SIZE_LIMIT && page < (int)Math
-                    .Ceiling((double)(totalRows / pageSize)),
+                        .Ceiling((double)totalRows / pageSize),
+                    HasPreviousPage = page > 1
                 }
+
             };
+
         }
 
-        public async Task<ResponseDto<PersonDto>> GetOneByIdAsync(Guid id)
-        {                                           //person => person.Id
-            var personEntity = await _context.Persons.Include(x => x.FamilyGroup).FirstOrDefaultAsync(x => x.Id == id);
+        public async Task<ResponseDto<PersonDto>> GetOneByIdAsync(string id)
+        {
+            var personEntity = await _context.Persons
+                .Include(x => x.FamilyGroup)
+                .FirstOrDefaultAsync(person => person.Id == id);
 
-            if (personEntity is null) 
+            if (personEntity is null)
             {
                 return new ResponseDto<PersonDto>
                 {
                     StatusCode = HttpStatusCode.NOT_FOUND,
                     Status = false,
-                    Message = "Registro no Encontrado"
-                };
+                    Message = "Registro no encontrado"
 
+                };
             }
+
             return new ResponseDto<PersonDto>
             {
                 StatusCode = HttpStatusCode.OK,
                 Status = true,
-                Message = "Registro Encontrado",
+                Message = "Registro encontrado",
                 Data = _mapper.Map<PersonDto>(personEntity)
             };
+
         }
 
         public async Task<ResponseDto<PersonActionResponseDto>> CreateAsync(PersonCreateDto dto)
@@ -107,7 +116,10 @@ namespace Persons.API.Services
                 {
                     var personEntity = _mapper.Map<PersonEntity>(dto);
 
-                    var countryEntity = await _context.Countries.FirstOrDefaultAsync(c => c.Id == dto.CountryId);
+                    personEntity.Id = Guid.NewGuid().ToString();
+
+                    var countryEntity = await _context.Countries
+                        .FirstOrDefaultAsync(c => c.Id == dto.CountryId);
 
                     if (countryEntity is null)
                     {
@@ -115,25 +127,25 @@ namespace Persons.API.Services
                         {
                             StatusCode = HttpStatusCode.BAD_REQUEST,
                             Status = false,
-                            Message = "El Pais no Existe!"
+                            Message = "El pais no existe"
                         };
                     }
 
                     _context.Persons.Add(personEntity);
 
                     await _context.SaveChangesAsync();
-                    //Mapeo para Family Members
+
                     if (dto.Family != null && dto.Family.Count() > 1)
                     {
                         var familyGroup = _mapper.Map<List<FamilyMemberEntity>>(dto.Family);
 
                         familyGroup = familyGroup.Select(m => new FamilyMemberEntity
                         {
-                            Id = Guid.NewGuid(),
+                            Id = Guid.NewGuid().ToString(),
                             FirstName = m.FirstName,
                             LastName = m.LastName,
                             PersonId = personEntity.Id,
-                            Relationship = m.Relationship
+                            Relationship = m.Relationship,
                         }).ToList();
 
                         _context.FamilyGroup.AddRange(familyGroup);
@@ -141,14 +153,13 @@ namespace Persons.API.Services
                         await _context.SaveChangesAsync();
                     }
 
-
                     transaction.Commit();
 
                     return new ResponseDto<PersonActionResponseDto>
                     {
                         StatusCode = HttpStatusCode.CREATED,
                         Status = true,
-                        Message = "Registro Creado Correctamente",
+                        Message = "Registro creado correctamente",
                         Data = _mapper.Map<PersonActionResponseDto>(personEntity)
                     };
                 }
@@ -156,26 +167,27 @@ namespace Persons.API.Services
                 {
                     Console.WriteLine(e.Message);
 
-                    // Deshacer todo si se produce un error
                     await transaction.RollbackAsync();
 
                     return new ResponseDto<PersonActionResponseDto>
                     {
                         StatusCode = HttpStatusCode.INTERNAL_SERVER_ERROR,
                         Status = false,
-                        Message = "Error Interno en el Servidor, Contacte al Admin",
+                        Message = "Error interno en el servidor, contacte al admin.",
                     };
-                }   
+                }
             }
         }
 
-        public async Task<ResponseDto<PersonActionResponseDto>> EditAsync(PersonEditDto dto, Guid id)
+        public async Task<ResponseDto<PersonActionResponseDto>> EditAsync(
+            PersonEditDto dto, string id)
         {
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    var personEntity = await _context.Persons.FirstOrDefaultAsync(x => x.Id == id);
+                    var personEntity = await _context.Persons
+                        .FirstOrDefaultAsync(x => x.Id == id);
 
                     if (personEntity is null)
                     {
@@ -183,12 +195,12 @@ namespace Persons.API.Services
                         {
                             StatusCode = HttpStatusCode.NOT_FOUND,
                             Status = false,
-                            Message = "Registro no Encontrado",
+                            Message = "Registro no encontrado",
                         };
                     }
 
-                    //Validar si Existe el Pais en la Base de Datos de Paises
-                    var countryEntity = await _context.Countries.FirstOrDefaultAsync(c => c.Id == dto.CountryId);
+                    var countryEntity = await _context.Countries
+                        .FirstOrDefaultAsync(c => c.Id == dto.CountryId);
 
                     if (countryEntity is null)
                     {
@@ -196,15 +208,9 @@ namespace Persons.API.Services
                         {
                             StatusCode = HttpStatusCode.BAD_REQUEST,
                             Status = false,
-                            Message = "El Pais no Existe!"
+                            Message = "El pais no existe"
                         };
                     }
-
-                    //Para Mapeo sin AutoMapper
-                    //personEntity.FirstName = dto.FirstName;
-                    //personEntity.LastName = dto.LastName;
-                    //personEntity.DNI = dto.DNI;
-                    //personEntity.Gender = dto.Gender;
 
                     _mapper.Map<PersonEditDto, PersonEntity>(dto, personEntity);
 
@@ -213,7 +219,9 @@ namespace Persons.API.Services
 
                     if (dto.Family is not null && dto.Family.Count > 0)
                     {
-                        var oldFamilyGroup = await _context.FamilyGroup.Where(fg => fg.PersonId == id).ToListAsync();
+                        var oldFamilyGroup = await _context.FamilyGroup
+                            .Where(fg => fg.PersonId == id).ToListAsync();
+
 
                         if (oldFamilyGroup.Count > 0)
                         {
@@ -224,15 +232,16 @@ namespace Persons.API.Services
                         var newFamilyGroup = dto.Family
                             .Select(fg => new FamilyMemberEntity
                             {
-                                Id = Guid.NewGuid(),
+                                Id = Guid.NewGuid().ToString(),
                                 FirstName = fg.FirstName,
                                 LastName = fg.LastName,
                                 PersonId = id,
-                                Relationship = fg.Relationship
+                                Relationship = fg.Relationship,
                             }).ToList();
 
                         _context.AddRange(newFamilyGroup);
                         await _context.SaveChangesAsync();
+
                     }
 
                     await transaction.CommitAsync();
@@ -241,12 +250,11 @@ namespace Persons.API.Services
                     {
                         StatusCode = HttpStatusCode.OK,
                         Status = true,
-                        Message = "Registro Editado Correctamente",
+                        Message = "Registro editado corretamente",
                         Data = _mapper.Map<PersonActionResponseDto>(personEntity)
                     };
                 }
-
-                catch  (Exception)
+                catch (Exception)
                 {
                     await transaction.RollbackAsync();
 
@@ -254,17 +262,18 @@ namespace Persons.API.Services
                     {
                         StatusCode = HttpStatusCode.INTERNAL_SERVER_ERROR,
                         Status = false,
-                        Message = "Se Produjo un Error al Editar el Registro"
+                        Message = "Se produjo un error al editar el registro",
                     };
                 }
             }
 
-            
         }
 
-        public async Task<ResponseDto<PersonActionResponseDto>> DeleteAsync(Guid id)
+        public async Task<ResponseDto<PersonActionResponseDto>> DeleteAsync(
+            string id)
         {
-            var personEntity = await _context.Persons.FirstOrDefaultAsync(x => x.Id == id);
+            var personEntity = await _context.Persons
+                .FirstOrDefaultAsync(x => x.Id == id);
 
             if (personEntity is null)
             {
@@ -272,7 +281,7 @@ namespace Persons.API.Services
                 {
                     StatusCode = HttpStatusCode.NOT_FOUND,
                     Status = false,
-                    Message = "Registro no Encontrado"
+                    Message = "Registro no encontrado",
                 };
             }
 
@@ -283,12 +292,12 @@ namespace Persons.API.Services
             {
                 StatusCode = HttpStatusCode.OK,
                 Status = true,
-                Message = "Registro Eliminado Correctamente",
+                Message = "Registro eliminado correctamente",
                 Data = _mapper.Map<PersonActionResponseDto>(personEntity)
             };
 
         }
 
-    
+
     }
 }
